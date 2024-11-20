@@ -1,0 +1,22 @@
+{
+  "name": "wave-equation",
+  "version": "1.0.0",
+  "description": "solving wave equation and generating graphs",
+  "main": "app.js",
+  "scripts": {
+    "test": "npm run jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/G3ntleM4n/wave-equation.git"
+  },
+  "author": "Alexander Sokolov, IDM-24-01",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/G3ntleM4n/wave-equation/issues"
+  },
+  "homepage": "https://github.com/G3ntleM4n/wave-equation#readme",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
