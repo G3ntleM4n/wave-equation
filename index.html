@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" type="text/css" href="jsxgraph.css" />
+  <title>Wave-equation</title>
+</head>
+<style>
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  body {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #box {
+    width: 600px;
+    height: 600px;
+    border: 1px solid black;
+  }
+</style>
+
+<body>
+  <div id="box" class="jxgbox"></div>
+
+
+</body>
+<script type="text/javascript" src="jsxgraphcore.js"></script>
+<script type="module" src="app.js"></script>
+
+<script>
+  let box = document.getElementById('box');
+
+  let board = JXG.JSXGraph.initBoard(
+    box.id,
+    {
+      boundingbox: [-0.1, 0.3, 1.4, -0.15],
+      axis: true,
+      grid: false,
+      showCopyright: false
+    }
+  );
+  const PI = Math.PI;
+  const L = 1;
+  const T = 1;
+  const N = 200;
+  const M = 400;
+  const dx = L / (N - 1);
+  const dt = T / (M - 1);
+  const a = 1;
+
+  // Проверка условия устойчивости
+  const r = a * dt / dx;
+  if (r >= 1) {
+    console.error("Условие устойчивости нарушено. Уменьшите шаг времени или увеличьте шаг пространства.");
+    process.exit(1);
+  }
+
+  const fillArray = (start, finish, itemsCount) => {
+    arrayLength = finish - start;
+    const stepLength = arrayLength / itemsCount;
+    let step = stepLength;
+    const array = [start];
+    while (array.length <= itemsCount) {
+      array.push(start + step);
+      step += stepLength;
+    };
+    return array;
+  };
+
+  let xx = fillArray(0, L, N);
+  let tt = fillArray(0, T, M);
+
+  const uInitial = (x) => (0.2 * (1 - x) * Math.sin(PI * x));
+
+  let v0 = new Array(N).fill(0);
+
+  let U = new Array(M);
+  for (let i = 0; i < M; i++) {
+    U[i] = new Array(N);
+  }
+
+  function fi(x) {
+    return 0;
+  }
+
+  // Начальное условие
+  for (let j = 0; j < N; j++) {
+    U[0][j] = uInitial(j * dx);
+    U[1][j] = uInitial(j * dx) + dt * v0[j];
+  }
+
+  // Граничные условия
+  for (let i = 0; i < M; i++) {
+    U[i][0] = fi(0);
+    U[i][N - 1] = fi(L);
+  }
+
+  for (let k = 1; k < M - 1; k += 1) {
+    for (let i = 1; i < N - 1; i += 1) {
+      U[k + 1][i] = 2 * U[k][i] - U[k - 1][i] + r * (U[k][i + 1] - 2 * U[k][i] + U[k][i - 1]);
+    }
+  }
+
+  const calcY = (group) => {
+    const y = [];
+    for (let j = 0; j < N; j++) {
+      y.push(U[group][j]);
+    }
+    return y;
+  }
+
+  const colors = ['red', 'orange', 'cyan', 'green', 'blue', 'indigo', 'violet', 'black', 'grey'];
+
+  let k = 0;
+  for (let i = 50; i < M; i += N / 4) {
+    const color = colors[k];
+    board.create('curve', [xx, calcY(i)], {
+      strokeWidth: 2,
+      strokeColor: color,
+    });
+    k += 1;
+  }
+
+  const labelsForLegend = [];
+
+  for (let i = 50; i < M; i += N / 4) {
+    labelsForLegend.push(`t = ${tt[i].toFixed(3)}`);
+  }
+
+  let legend = board.create('legend', [0.1, 0.26], {
+    labels: labelsForLegend,
+    colors: colors,
+    strokeWidth: 5,
+  });
+  board.update();
+
+</script>
+
+</html>
