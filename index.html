@@ -15,22 +15,58 @@
   }
 
   body {
-    width: 100vw;
-    height: 100vh;
+    min-width: 100vw;
+    min-height: 100vh;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
   }
 
-  #box {
+  header {
+    display: flex;
+    width: 100vw;
+    height: 5vh;
+    justify-content: space-evenly;
+  }
+
+  .header_item {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    flex-grow: 1;
+    border: 1px solid black;
+  }
+
+  a {
+    flex-grow: 1;
+    align-content: center;
+    text-align: center;
+    text-decoration: none;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    color: black;
+  }
+
+  #box,
+  #box2,
+  #box3 {
     width: 600px;
     height: 600px;
     border: 1px solid black;
+    margin: 25px 0;
   }
 </style>
 
 <body>
+  <header>
+    <div class="header_item"><a href="index.html">a = 1</a></div>
+    <div class="header_item"><a href="index2.html">a = 2</a></div>
+    <div class="header_item"><a href="index3.html">fi != 0</a></div>
+  </header>
   <div id="box" class="jxgbox"></div>
+  <div id="box2" class="jxgbox"></div>
+  <div id="box3" class="jxgbox"></div>
 
 
 </body>
@@ -50,17 +86,17 @@
     }
   );
   const PI = Math.PI;
-  const L = 1;
-  const T = 1;
-  const N = 200;
-  const M = 400;
+  const L = 1;    // Струна натянута от 0 до L
+  const T = 1;    // Период колебаний T
+  const N = 200;  // количество узлов по пространству
+  const M = 400;  // количество временных слоев
   const dx = L / (N - 1);
-  const dt = T / (M - 1);
+  const dt = T / (M);
   const a = 1;
 
   // Проверка условия устойчивости
-  const r = a * dt / dx;
-  if (r >= 1) {
+  const r = (a * dt / dx) ** 2;
+  if (r > 1) {
     console.error("Условие устойчивости нарушено. Уменьшите шаг времени или увеличьте шаг пространства.");
     process.exit(1);
   }
@@ -77,72 +113,149 @@
     return array;
   };
 
-  let xx = fillArray(0, L, N);
-  let tt = fillArray(0, T, M);
+  const x = fillArray(0, L, N);
+  const t = fillArray(0, T, M);
 
-  const uInitial = (x) => (0.2 * (1 - x) * Math.sin(PI * x));
+  const v0 = new Array(N).fill(0);
 
-  let v0 = new Array(N).fill(0);
+  const initU = (j) => (0.2 * (1 - x[j]) * Math.sin(PI * x[j]));
 
-  let U = new Array(M);
-  for (let i = 0; i < M; i++) {
-    U[i] = new Array(N);
-  }
+  const fi = (x) => 0;
 
-  function fi(x) {
-    return 0;
-  }
+  const fillU = () => {
+    // Инициализация
+    const U = new Array(M);
 
-  // Начальное условие
-  for (let j = 0; j < N; j++) {
-    U[0][j] = uInitial(j * dx);
-    U[1][j] = uInitial(j * dx) + dt * v0[j];
-  }
-
-  // Граничные условия
-  for (let i = 0; i < M; i++) {
-    U[i][0] = fi(0);
-    U[i][N - 1] = fi(L);
-  }
-
-  for (let k = 1; k < M - 1; k += 1) {
-    for (let i = 1; i < N - 1; i += 1) {
-      U[k + 1][i] = 2 * U[k][i] - U[k - 1][i] + r * (U[k][i + 1] - 2 * U[k][i] + U[k][i - 1]);
+    for (let i = 0; i < M; i++) {
+      U[i] = new Array(N);
     }
-  }
 
-  const calcY = (group) => {
-    const y = [];
+    // Начальное условие
     for (let j = 0; j < N; j++) {
-      y.push(U[group][j]);
+      U[0][j] = initU(j);
+      U[1][j] = initU(j) + dt * v0[j];
     }
-    return y;
+
+    // Граничные условия
+    for (let i = 0; i < M; i++) {
+      U[i][0] = fi(0);
+      U[i][N - 1] = fi(L);
+    }
+
+    // Явный шаблон "крест"
+    for (let i = 1; i < M - 1; i += 1) {
+      for (let j = 1; j < N - 1; j += 1) {
+        U[i + 1][j] = 2 * U[i][j] - U[i - 1][j] + r * (U[i][j + 1] - 2 * U[i][j] + U[i][j - 1]);
+      }
+    }
+
+    return U;
   }
+
+  const U = fillU();
+
+  const calcY = (i) => U[i];
 
   const colors = ['red', 'orange', 'cyan', 'green', 'blue', 'indigo', 'violet', 'black', 'grey'];
 
   let k = 0;
-  for (let i = 50; i < M; i += N / 4) {
+  const labelsForLegend = [];
+
+  for (let i = N / 4; i < M; i += N / 4) {
+    labelsForLegend.push(`t = ${t[i].toFixed(3)}`);
     const color = colors[k];
-    board.create('curve', [xx, calcY(i)], {
+    k += 1;
+
+    board.create('curve', [x, calcY(i)], {
       strokeWidth: 2,
       strokeColor: color,
     });
-    k += 1;
-  }
-
-  const labelsForLegend = [];
-
-  for (let i = 50; i < M; i += N / 4) {
-    labelsForLegend.push(`t = ${tt[i].toFixed(3)}`);
   }
 
   let legend = board.create('legend', [0.1, 0.26], {
     labels: labelsForLegend,
     colors: colors,
-    strokeWidth: 5,
+    strokeWidth: 4,
   });
   board.update();
+
+  let box2 = document.getElementById('box2');
+
+  let board2 = JXG.JSXGraph.initBoard(
+    box2.id,
+    {
+      boundingbox: [-0.1, 0.12, 1.4, -0.12],
+      axis: true,
+      grid: false,
+      showCopyright: false
+    }
+  );
+
+  const getCurve2 = (number) => {
+    const result = [];
+    for (let i = 0; i < M; i++) {
+      if (t[i].toFixed(3) === (number).toFixed(3)) {
+        for (let j = 0; j < N; j++) {
+          result.push(U[i][j]);
+        }
+      }
+    }
+    return result;
+  }
+
+  board2.create('curve', [x, getCurve2(0.5)], {
+    strokeWidth: 2,
+    strokeColor: colors[0]
+  });
+
+  const labelsForLegend2 = [`t = ${t[200].toFixed(3)}`];
+
+  let legend2 = board2.create('legend', [0.1, 0.11], {
+    labels: labelsForLegend2,
+    colors: colors,
+    strokeWidth: 4,
+  });
+
+  board2.update();
+
+  let box3 = document.getElementById('box3');
+
+  let board3 = JXG.JSXGraph.initBoard(
+    box3.id,
+    {
+      boundingbox: [-0.1, 0.12, 1.4, -0.12],
+      axis: true,
+      grid: false,
+      showCopyright: false
+    }
+  );
+
+  // u(x = 0.5, t)
+  const getCurve3 = (number) => {
+    const result = [];
+    for (let i = 0; i < M; i++) {
+      for (let j = 0; j < N; j++) {
+        if (x[j].toFixed(3) === (number).toFixed(3)) {
+          result.push(U[i][j]);
+        }
+      }
+    }
+    return result;
+  }
+
+  board3.create('curve', [t, getCurve3(0.5)], {
+    strokeWidth: 2,
+    strokeColor: colors[0]
+  });
+
+  const labelsForLegend3 = [`x = ${x[100].toFixed(3)}`];
+
+  let legend3 = board3.create('legend', [0.1, 0.11], {
+    labels: labelsForLegend3,
+    colors: colors,
+    strokeWidth: 4,
+  });
+  board3.update();
 
 </script>
 
