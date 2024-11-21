@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" type="text/css" href="jsxgraph.css" />
+  <title>Wave-equation</title>
+</head>
+<style>
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  body {
+    min-width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  header {
+    display: flex;
+    width: 100vw;
+    height: 5vh;
+    justify-content: space-evenly;
+  }
+
+  .header_item {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    flex-grow: 1;
+    border: 1px solid black;
+  }
+
+  a {
+    flex-grow: 1;
+    align-content: center;
+    text-align: center;
+    text-decoration: none;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    color: black;
+  }
+
+  #box {
+    width: 600px;
+    height: 600px;
+    border: 1px solid black;
+    margin: 25px 0;
+  }
+</style>
+
+<body>
+  <header>
+    <div class="header_item"><a href="index.html">a = 1</a></div>
+    <div class="header_item"><a href="index2.html">a = 2</a></div>
+    <div class="header_item"><a href="index3.html">fi != 0</a></div>
+  </header>
+  <div id="box" class="jxgbox"></div>
+</body>
+<script type="text/javascript" src="jsxgraphcore.js"></script>
+<script type="module" src="app.js"></script>
+
+<script>
+  let box = document.getElementById('box');
+
+  let board = JXG.JSXGraph.initBoard(
+    box.id,
+    {
+      boundingbox: [-0.1, 0.3, 1.4, -0.15],
+      axis: true,
+      grid: false,
+      showCopyright: false
+    }
+  );
+  const PI = Math.PI;
+  const L = 1;    // Струна натянута от 0 до L
+  const T = 1;    // Период колебаний T
+  const N = 200;  // количество узлов по пространству
+  const M = 400;  // количество временных слоев
+  const dx = L / (N - 1);
+  const dt = T / (M);
+  const a = 1;
+
+  // Проверка условия устойчивости
+  const r = (a * dt / dx) ** 2;
+  if (r > 1) {
+    console.error("Условие устойчивости нарушено. Уменьшите шаг времени или увеличьте шаг пространства.");
+    process.exit(1);
+  }
+
+  const fillArray = (start, finish, itemsCount) => {
+    arrayLength = finish - start;
+    const stepLength = arrayLength / itemsCount;
+    let step = stepLength;
+    const array = [start];
+    while (array.length <= itemsCount) {
+      array.push(start + step);
+      step += stepLength;
+    };
+    return array;
+  };
+
+  const x = fillArray(0, L, N);
+  const t = fillArray(0, T, M);
+
+  const v0 = new Array(N).fill(0);
+
+  const initU = (j) => (0.2 * (1 - x[j]) * Math.sin(PI * x[j]));
+
+  const fi = (x) => 0;
+
+  const fillU = () => {
+    // Инициализация
+    const U = new Array(M);
+
+    for (let i = 0; i < M; i++) {
+      U[i] = new Array(N);
+    }
+
+    // Начальное условие
+    for (let j = 0; j < N; j++) {
+      U[0][j] = initU(j);
+      U[1][j] = initU(j) + dt * v0[j];
+    }
+
+    // Граничные условия
+    for (let i = 0; i < M; i++) {
+      U[i][0] = fi(0);
+      U[i][N - 1] = fi(L);
+    }
+
+    // Явный шаблон "крест"
+    for (let i = 1; i < M - 1; i += 1) {
+      for (let j = 1; j < N - 1; j += 1) {
+        U[i + 1][j] = 2 * U[i][j] - U[i - 1][j] + r * (U[i][j + 1] - 2 * U[i][j] + U[i][j - 1]);
+      }
+    }
+
+    return U;
+  }
+
+  const U = fillU();
+
+  const calcY = (i) => U[i];
+
+  const colors = ['red', 'orange', 'cyan', 'green', 'blue', 'indigo', 'violet', 'black', 'grey'];
+
+  let k = 0;
+  const labelsForLegend = [];
+
+  for (let i = N / 4; i < M; i += N / 4) {
+    labelsForLegend.push(`t = ${t[i].toFixed(3)}`);
+    const color = colors[k];
+    k += 1;
+
+    board.create('curve', [x, calcY(i)], {
+      strokeWidth: 2,
+      strokeColor: color,
+    });
+  }
+
+  let legend = board.create('legend', [0.1, 0.26], {
+    labels: labelsForLegend,
+    colors: colors,
+    strokeWidth: 4,
+  });
+  board.update();
+
+</script>
+
+</html>
