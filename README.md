@@ -1,1 +1,1 @@
-# wave-equation
+https://g3ntlem4n.github.io/wave-equation/
